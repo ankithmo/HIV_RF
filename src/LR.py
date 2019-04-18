@@ -1,15 +1,9 @@
-from sklearn.linear_model import LogisticRegressionCV, LogisticRegression
-from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import os
 import sys
 sys.path.append("../.")
 
 from functions import Helpers
 from variables import Variables
+from setup_logger import logger
 
 def LR(input_list, results_path, seed=123, k_folds=10):
   """
@@ -18,17 +12,18 @@ def LR(input_list, results_path, seed=123, k_folds=10):
     3. Get ROC curve
 
     Arguments:
-      - input_list: Absolute path to [X,Y] or [X_train, Y_train, X_test, Y_test]
-      - results_path: Absolute path to the directory where the figures must be saved
-      - seed (Optional): Random seed
-          Default: 123
-      - k_folds (Optional): Number of folds for cross-validation
-          Default: 10
+      - input_list: list, length = 2 or 4
+          Absolute path to [X,Y] or [X_train, Y_train, X_test, Y_test]
+      - results_path: str
+          Absolute path to the directory where the figures must be saved
+      - seed: int, optional, default = 123
+          Random seed
+      - k_folds: int, optional, default = 10
+          Number of folds for cross-validation
 
     Returns:
       - Trained logistic regression model
   """
-
   h = Helpers()
   v = Variables()
   
@@ -47,7 +42,8 @@ def LR(input_list, results_path, seed=123, k_folds=10):
     h.check_file_existence(X_test)
     h.check_file_existence(Y_test)
   else:
-    print "{0} files found in input_list, expected 2 or 4".format(num_files)
+    logger.error("{0} files found in input_list, expected 2 or 4".format(num_files))
+    h.error()
 
   # Import datasets
   if num_files == 2:
@@ -66,41 +62,22 @@ def LR(input_list, results_path, seed=123, k_folds=10):
 
     # accuracy
     score = lr.score(X, Y)
-    print "accuracy =", score
+    logger.info("accuracy = {0}".format(score))
 
     # build confusion matrix
     cm = confusion_matrix(Y, lr.predict(X))
-    h.confmat_heatmap(cm, score, os.path.join(results_path,'lr_confmat.png'))
+    h.confmat_heatmap(cm, score, os.path.join(results_path,'confmat.png'))
 
     # build roc auc curve
     fpr, tpr, _ = roc_curve(lr.predict(X), Y, drop_intermediate=False)
     auc = roc_auc_score(lr.predict(X), Y)
-    print "roc auc =", auc
-    h.roc_auc(fpr, tpr, auc, os.path.join(results_path,'lr_roc_auc.png'))
+    logger.info("ROC AUC = {0}".format(auc))
+    h.roc_auc(fpr, tpr, auc, os.path.join(results_path,'roc_auc.png'))
   else:
-    lr = logisticregression(solver='liblinear', random_state=seed)
+    lr = LogisticRegression(solver='liblinear', random_state=seed)
     lr.fit(X_train, Y_train)
 
-    # accuracy
-    train_score = lr.score(X_train, Y_train)
-    print "Training accuracy =", train_score
-    test_score = lr.score(X_test, Y_test)
-    print "Testing accuracy =", test_score
-
-    # build confusion matrix
-    train_cm = confusion_matrix(Y_train, lr.predict(X_train))
-    h.confmat_heatmap(train_cm, train_score, os.path.join(results_path,'lr_confmat_train.png'))
-    test_cm = confusion_matrix(Y_test, lr.predict(X_test))
-    h.confmat_heatmap(test_cm, test_score, os.path.join(results_path,'lr_confmat_test.png'))
-
-    # build roc auc curve
-    train_fpr, train_tpr, _ = roc_curve(lr.predict(X_train), Y_train, drop_intermediate=False)
-    train_auc = roc_auc_score(lr.predict(X_train), Y_train)
-    print "roc auc =", train_auc
-    h.roc_auc(train_fpr, train_tpr, train_auc, os.path.join(results_path,'lr_roc_auc_train.png'))
-    test_fpr, test_tpr, _ = roc_curve(lr.predict(X_test), Y_test, drop_intermediate=False)
-    test_auc = roc_auc_score(lr.predict(X_test), Y_test)
-    print "roc auc =", test_auc
-    h.roc_auc(test_fpr, test_tpr, test_auc, os.path.join(results_path,'lr_roc_auc_test.png'))
+    # get accuracy, confusion matrix and ROC AUC
+    h.get_metrics(lr, [X_train, Y_train, X_test, Y_test], results_path)
 
   return lr

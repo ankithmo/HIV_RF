@@ -1,12 +1,29 @@
 # To predict kidney disease among individuals who have HIV. 
 
-People living with HIV/AIDS (PLWHA) are at high risk for **kidney disease** and 
-**renal failure** since the virus attacks the kidney, and even when HIV is under 
-control (through anti-retrovirus therapy), the drugs the individual needs to take 
-may be toxic to the kidneys.  Some behaviors may also elevate risk for kidney 
-disease, like smoking, alcohol use, or substance use.  There are also demographic 
-risk factors that lead to kidney damage and kidney disease --- for instance, 
-kidney disease is more prevalent among African Americans and older individuals 
---- and having other diseases, like cardiovascular disease (CVD), diabetes, 
-hypertension, hepatitis B and C virus (HCV) can also raise the risk of kidney 
-disease.
+## Prerequisites
+
+* python3 must be installed
+* The following packages must be installed:
+  * pandas
+  * numpy
+  * logging
+  * os
+  * matplotlib.pyplot
+  * seaborn
+  * xlrd
+  * pydotplus
+  * sklearn.model_selection
+  * sklearn.preprocessing
+  * sklearn.tree
+  * sklearn.neural_network
+  * sklearn.externals.six
+  * sklearn.linear_model
+  * sklearn.metrics
+  * sys
+
+## Execution
+
+* Update parameters in `frontend.py`
+* Update the names of the diseases in `diseases.txt` under `vars` directory
+* Update the names of the features in `features.txt` under `vars` directory
+* Execute `python3 frontend.py` from `HIV_RF` directory

@@ -1,12 +1,13 @@
 from sklearn.model_selection import train_test_split
-import numpy as np
+from sklearn.preprocessing import StandardScaler
 import pandas as pd
-import sys
 import os
+import sys
 sys.path.append("../.")
 
 from functions import Helpers
 from variables import Variables
+from setup_logger import logger
 
 def split(dataset, target, test_size, output_direc, seed=123):
   """
@@ -19,19 +20,23 @@ def split(dataset, target, test_size, output_direc, seed=123):
     7. Save X, Y, X_train, Y_train, X_test, Y_test, X_unknown, Y_unknown to output_direc
 
     Arguments:
-      - dataset: Absolute path to the preprocessed dataset which has to be split
-      - target: The target feature
-      - test_size: Size of the test set (percentage)
-      - output_direc: Directory where training and test directory must be placed
-      - seed (Optional): Random seed value
-        Default value: 123
+      - dataset: str
+          Absolute path to the preprocessed dataset which has to be split
+      - target: str
+          The target feature
+      - test_size: float
+          Size of the test set (percentage)
+      - output_direc: str
+          Directory where training and test directory must be placed
+      - seed: int, optional, default = 123
+          Random seed value
 
     Returns:
       - No return value
   """
   h = Helpers()
   v = Variables()
-  
+
   # Diagnostics
   h.check_file_existence(dataset)
   h.check_float(test_size)
@@ -44,7 +49,7 @@ def split(dataset, target, test_size, output_direc, seed=123):
 
   # Take only those individuals where target is not NaN
   data_nonNaN = data[data[target].notnull()]
-  print "{0} individuals do not have missing values in their target attribute".format(data_nonNaN.shape[0])
+  logger.info("{0} individuals do not have missing values in their target attribute".format(data_nonNaN.shape[0]))
   data_NaN = data[data[target].isnull()]
 
   # Read features from features file
@@ -54,11 +59,14 @@ def split(dataset, target, test_size, output_direc, seed=123):
   X = data_nonNaN[features]
   Y = data_nonNaN[target]
 
-  # Normalize X
-  #X_norm = h.normalize(X)
-  
   # Split X and Y into training and testing data
   X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=test_size, random_state=seed)
+  
+  # Feature scaling
+  scaler = StandardScaler()
+  scaler.fit(X_train)
+  X_train = scaler.transform(X_train)
+  X_test = scaler.transform(X_test)
 
   # Get X_unknown and Y_unknown
   X_unknown = data_NaN[features]
