@@ -2,12 +2,16 @@ import sys
 sys.path.append("data/.")
 sys.path.append("src/.")
 sys.path.append("vars/.")
+
 from functions import Helpers
+from variables import Variables
+
 from preproc import preprocess
 from split import split
 from LR import LR
 from DT import DT
 from NN import NN
+
 from setup_logger import logger
 ################################################################################
 # PREPROCESSING
@@ -178,43 +182,92 @@ nn_beta_2 = 0.999
 # Maximum number of epochs to not meet tol improvement
 nn_iter_no_change = 10
 ################################################################################
+# CONSOLIDATED ROC CURVES
+################################################################################
+# Training datasets
+test_list = ["data/X_test.csv", "data/Y_test.csv"]
+
+# Absolute path to the directory where the joint ROC curve must be generated
+results_path = 'results'
+################################################################################
+################################################################################
 # DO NOT CHANGE CODE
 ################################################################################
 if __name__ == "__main__":
   h = Helpers()
-  
-  if do_preprocess:
-    print("Preprocessing")
-    preprocess(pre_dataset, pre_start_year, pre_end_year, pre_final_dataset)
-    print("completed")
+  v = Variables()
 
-  if do_split:
-    print("\nSplitting dataset")
-    split(spl_dataset, spl_target, spl_test_size, spl_output_direc, spl_seed)
-    print("completed")
+  logit = None
+  dec_tree = None
+  neural_net = None
+
+  try: 
+    if do_preprocess:
+      print("Preprocessing")
+      logger.info("Preprocessing")
+      preprocess(pre_dataset, pre_start_year, pre_end_year, pre_final_dataset)
+      logger.info("completed")
+      print("completed")
+  except Exception as e:
+    logger.error(e)
+    h.error()
+
+  try:
+    if do_split:
+      print("\nSplitting dataset")
+      logger.info("Splitting dataset")
+      split(spl_dataset, spl_target, spl_test_size, spl_output_direc, spl_seed)
+      logger.info("completed")
+      print("completed")
+  except Exception as e:
+    logger.error(e)
+    h.error()
 
   try:
     if do_lr:
       print("\nLogistic regression")
+      logger.info("Logistic regression")
       logit = LR(lr_input_list, lr_results_path, lr_seed, lr_k_folds)
+      logger.info("completed")
       print("completed")
   except Exception as e:
     logger.error(e)
+    logger.warning("logistic regression skipped")
+    print("Skipping logistic regression. Check {0} for details".format(v.log_f))
 
   try:
     if do_dt:
       print("\nDecision tree classification")
+      logger.info("Decision tree")
       dec_tree = DT(dt_input_list, dt_results_path, dt_seed, dt_criterion, dt_splitter, dt_max_depth)
+      logger.info("completed")
       print("completed")
   except Exception as e:
     logger.error(e)
+    logger.warning("decision tree skipped")
+    print("Skipping decision tree classification. Check {0} for details".format(v.log_f))
 
   try:  
     if do_nn:
       print("\nClassification using neural network")
+      logger.info("neural network")
       neural_net = NN(nn_input_list, nn_results_path, nn_seed, nn_hidden_layer, nn_activation, nn_solver, nn_regularization, nn_batch_size, nn_learning_rate_sch, nn_learning_rate_init, nn_max_iter, nn_tol, nn_momentum, nn_nesterov, nn_early, nn_valid_frac, nn_beta_1, nn_beta_2, nn_iter_no_change)
+      logger.info("completed")
       print("completed")
   except Exception as e:
     logger.error(e)
+    logger.warning("neural network skipped")
+    print("Skipping classification using neural network. Check {0} for details".format(v.log_f))
+
+  try:
+    print("\nGenerating consolidated ROC curve")
+    logger.info("consolidated ROC")
+    h.get_one_roc_curve(test_list, results_path, logit, dec_tree, neural_net)
+    logger.info("completed")
+    print("completed")
+  except Exception as e:
+    logger.error(e)
+    logger.warning("consolidated ROC failed")
+    print("Unable to generate consolidated ROC curve file. Check {0} for details".format(v.log_f))
 
   h.done()

@@ -13,7 +13,7 @@ from sklearn.tree import DecisionTreeClassifier, export_graphviz
 from sklearn.neural_network import MLPClassifier
 from sklearn.externals.six import StringIO
 from sklearn.linear_model import LogisticRegressionCV, LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix, roc_curve, roc_auc_score
+from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
 
 import sys
 sys.path.append("../.")
@@ -331,7 +331,9 @@ class Helpers:
 
       Arguments:
         - model: Model whose metrics must be computed
-        - data_list: list 
+        - data_list: list, length = 2 or 4 
+            Dataset [X, Y]
+            or
             Training and testing datasets [X_train, Y_train, X_test, Y_test]
         - results_path: str
             Absolute path to the directory where the metric files must be saved
@@ -347,50 +349,75 @@ class Helpers:
       Returns:
         - No return values
     """
-    X_train, Y_train, X_test, Y_test = data_list
+    if len(data_list) == 2:
+      X, Y = data_list
+      score = model.score(X, Y)
+      pred = model.predict(X)
+      if accuracy:
+        logger.info("accuracy = {0}".format(score))
+      if class_report:
+        cr = classification_report(Y, pred)
+        cr_file = os.path.join(results_path,'class_report.txt')
+        self.create_file(cr_file)
+        with open(cr_file, 'w') as f:
+          f.write(cr)
+        logger.info("Classification report generated: {0}".format(cr_file))
+      if confmat:
+        cm = confusion_matrix(Y, pred)
+        self.confmat_heatmap(cm, score, os.path.join(results_path,'confmat.png'))
+      if roc_auc:
+        fpr, tpr, _ = roc_curve(Y, model.predict_proba(X)[:,1])
+        auc_score = auc(fpr, tpr)
+        logger.info("ROC AUC = {0}".format(auc_score))
+        self.roc_auc(fpr, tpr, auc_score, os.path.join(results_path,'roc_auc.png'))
+    elif len(data_list) == 4:
+      X_train, Y_train, X_test, Y_test = data_list
     
-    train_score = model.score(X_train, Y_train)
-    test_score = model.score(X_test, Y_test)
+      train_score = model.score(X_train, Y_train)
+      test_score = model.score(X_test, Y_test)
     
-    train_pred = model.predict(X_train)
-    test_pred = model.predict(X_test)
+      train_pred = model.predict(X_train)
+      test_pred = model.predict(X_test)
     
-    if accuracy:
-      logger.info("Training accuracy = {0}".format(train_score))
-      logger.info("Testing accuracy = {0}".format(test_score))
+      if accuracy:
+        logger.info("Training accuracy = {0}".format(train_score))
+        logger.info("Testing accuracy = {0}".format(test_score))
 
-    if class_report:
-      train_cr = classification_report(Y_train, train_pred)
-      train_cr_file = os.path.join(results_path,'class_report_train.txt')
-      self.create_file(train_cr_file)
-      with open(train_cr_file,'w') as f:
+      if class_report:
+        train_cr = classification_report(Y_train, train_pred)
+        train_cr_file = os.path.join(results_path,'class_report_train.txt')
+        self.create_file(train_cr_file)
+        with open(train_cr_file,'w') as f:
           f.write(train_cr)
-      logger.info("Training classification report generated: {0}".format(train_cr_file))
+        logger.info("Training classification report generated: {0}".format(train_cr_file))
 
-      test_cr = classification_report(Y_test, test_pred)
-      test_cr_file = os.path.join(results_path,'class_report_test.txt')
-      self.create_file(test_cr_file)
-      with open(test_cr_file,'w') as f:
+        test_cr = classification_report(Y_test, test_pred)
+        test_cr_file = os.path.join(results_path,'class_report_test.txt')
+        self.create_file(test_cr_file)
+        with open(test_cr_file,'w') as f:
           f.write(test_cr)
-      logger.info("Testing classification report generated: {0}".format(test_cr_file))
+        logger.info("Testing classification report generated: {0}".format(test_cr_file))
 
-    if confmat:
-      train_cm = confusion_matrix(Y_train, train_pred)
-      self.confmat_heatmap(train_cm, train_score, os.path.join(results_path,'confmat_train.png'))
+      if confmat:
+        train_cm = confusion_matrix(Y_train, train_pred)
+        self.confmat_heatmap(train_cm, train_score, os.path.join(results_path,'confmat_train.png'))
       
-      test_cm = confusion_matrix(Y_test, test_pred)
-      self.confmat_heatmap(test_cm, test_score, os.path.join(results_path,'confmat_test.png'))
+        test_cm = confusion_matrix(Y_test, test_pred)
+        self.confmat_heatmap(test_cm, test_score, os.path.join(results_path,'confmat_test.png'))
 
-    if roc_auc:
-      train_fpr, train_tpr, _ = roc_curve(train_pred, Y_train, pos_label=1)
-      train_auc = roc_auc_score(train_pred, Y_train)
-      logger.info("Training ROC AUC = {0}".format(train_auc))
-      self.roc_auc(train_fpr, train_tpr, train_auc, os.path.join(results_path,'roc_auc_train.png'))
+      if roc_auc:
+        train_fpr, train_tpr, _ = roc_curve(Y_train, model.predict_proba(X_train)[:,1])
+        train_auc = auc(train_fpr, train_tpr)
+        logger.info("Training ROC AUC = {0}".format(train_auc))
+        self.roc_auc(train_fpr, train_tpr, train_auc, os.path.join(results_path,'roc_auc_train.png'))
       
-      test_fpr, test_tpr, _ = roc_curve(test_pred, Y_test, pos_label=1)
-      test_auc = roc_auc_score(test_pred, Y_test)
-      logger.info("Testing ROC AUC = {0}".format(test_auc))
-      self.roc_auc(test_fpr, test_tpr, test_auc, os.path.join(results_path,'roc_auc_test.png'))
+        test_fpr, test_tpr, _ = roc_curve(Y_test, model.predict_proba(X_test)[:,1])
+        test_auc = auc(test_fpr, test_tpr)
+        logger.info("Testing ROC AUC = {0}".format(test_auc))
+        self.roc_auc(test_fpr, test_tpr, test_auc, os.path.join(results_path,'roc_auc_test.png'))
+    else:
+      logger.error("expected list of length 2 or 4, got {0}".format(len(data_list)))
+      self.error()
     return None
 
   def decision_tree_viz(self, model, path):
@@ -408,7 +435,62 @@ class Helpers:
     dot_data = StringIO()
     export_graphviz(model, out_file=dot_data, filled=True, rounded=True, special_characters=True, feature_names = self.read_feature_file(self.v.features_f), class_names=['0','1'])
     graph = pydotplus.graph_from_dot_data(dot_data.getvalue()) 
-    self.check_extension(path, '.png')
+    self.check_extension(path, 'png')
     graph.write_png(path)
     logger.info("{0} successfully generated".format(path))
+    return None
+
+  def get_one_roc_curve(self, data_list, results_path, logit, dec_tree, neural_net):
+    """
+      Generate all ROC curves in one plot
+
+      Arguments:
+        - data_list: list, length = 2
+            Test set [X_test,Y_test]
+        - results_path: str
+            Absolute path to the directory where the ROC curve must be generated
+        - data_list: list, length = 4
+            Training and testing datasets [X_train, Y_train, X_test, Y_test]
+        - logit: Logistic Regression model
+        - dec_tree: Decision tree model
+        - neural_net: Neural network model
+
+      Returns:
+        - No return value
+    """
+    if len(data_list) != 2:
+      logger.error("Expected array of length 2, got {0}".format(len(data_list)))
+      self.error()
+    
+    plt.figure(figsize=(9,9))
+
+    X, Y = data_list
+    self.check_file_existence(X)
+    self.check_file_existence(Y)
+
+    X = self.import_dataset(X)
+    Y = self.import_dataset(Y)
+
+    if logit != None:
+      logit_fpr, logit_tpr, _ = roc_curve(Y, logit.predict_proba(X)[:,1])
+      logit_auc_score = auc(logit_fpr, logit_tpr)
+      plt.plot(logit_fpr, logit_tpr, color='red', lw=2, label='Logistic regression, AUC = {0}'.format(logit_auc_score))
+    
+    if dec_tree != None:
+      dec_tree_fpr, dec_tree_tpr, _ = roc_curve(Y, dec_tree.predict_proba(X)[:,1])
+      dec_tree_auc_score = auc(dec_tree_fpr, dec_tree_tpr)
+      plt.plot(dec_tree_fpr, dec_tree_tpr, color='blue', lw=2, label='Decision tree, AUC = {0}'.format(dec_tree_auc_score))
+    
+    if neural_net != None:
+      neural_net_fpr, neural_net_tpr, _ = roc_curve(Y, neural_net.predict_proba(X)[:,1])
+      neural_net_auc_score = auc(neural_net_fpr, neural_net_tpr)
+      plt.plot(neural_net_fpr, neural_net_tpr, color='green', lw=2, label='Neural network, AUC = {0}'.format(neural_net_auc_score))
+    plt.plot([0, 1], [0, 1], color='yellow', lw=2, linestyle='--')
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
+    plt.title('ROC curves'.format(auc), size=15)
+    plt.legend(loc='upper left')
+    reqd_file = os.path.join(results_path, "final_roc.png")
+    plt.savefig(reqd_file)
+    logger.info("{0} successfully generated".format(reqd_file))
     return None

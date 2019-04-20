@@ -1,3 +1,5 @@
+from sklearn.tree import DecisionTreeClassifier
+import os
 import sys
 sys.path.append("../.")
 
@@ -36,7 +38,7 @@ def DT(input_list, results_path, seed=123, criterion='gini', splitter='best', ma
   h.check_dir(results_path)
 
   if len(input_list) != 4:
-    logging.error("{0} files found in input_list, expected 4".format(len(input_list)))
+    logger.error("{0} files found in input_list, expected 4".format(len(input_list)))
     h.error()
     
   X_train, Y_train, X_test, Y_test = input_list

@@ -1,3 +1,7 @@
+import numpy as np
+from sklearn.linear_model import LogisticRegressionCV, LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
+import os
 import sys
 sys.path.append("../.")
 
@@ -59,25 +63,12 @@ def LR(input_list, results_path, seed=123, k_folds=10):
   if num_files == 2:
     lr = LogisticRegressionCV(solver='liblinear', cv=k_folds, random_state=seed)
     lr.fit(X, Y)
-
-    # accuracy
-    score = lr.score(X, Y)
-    logger.info("accuracy = {0}".format(score))
-
-    # build confusion matrix
-    cm = confusion_matrix(Y, lr.predict(X))
-    h.confmat_heatmap(cm, score, os.path.join(results_path,'confmat.png'))
-
-    # build roc auc curve
-    fpr, tpr, _ = roc_curve(lr.predict(X), Y, drop_intermediate=False)
-    auc = roc_auc_score(lr.predict(X), Y)
-    logger.info("ROC AUC = {0}".format(auc))
-    h.roc_auc(fpr, tpr, auc, os.path.join(results_path,'roc_auc.png'))
+    # get accuracy, classification report, confusion matrix and ROC AUC
+    h.get_metrics(lr, [X, Y], results_path)
   else:
     lr = LogisticRegression(solver='liblinear', random_state=seed)
     lr.fit(X_train, Y_train)
-
-    # get accuracy, confusion matrix and ROC AUC
+    # get accuracy, classification matrix, confusion matrix and ROC AUC
     h.get_metrics(lr, [X_train, Y_train, X_test, Y_test], results_path)
 
   return lr
