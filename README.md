@@ -2,23 +2,25 @@
 
 ## Prerequisites
 
-* python3 must be installed
+* python v3.7.3 must be installed
 * The following packages must be installed:
-  * pandas
-  * numpy
-  * logging
+  * pandas v0.24.2
+  * numpy v1.16.2
+  * logging 
   * os
-  * matplotlib.pyplot
-  * seaborn
-  * xlrd
-  * pydotplus
-  * sklearn.model_selection
-  * sklearn.preprocessing
-  * sklearn.tree
-  * sklearn.neural_network
-  * sklearn.externals.six
-  * sklearn.linear_model
-  * sklearn.metrics
+  * matplotlib
+      * pyplot v3.0.3
+  * seaborn v0.9.0
+  * xlrd v0.9.0
+  * pydotplus v2.0.2
+  * sklearn v0.20.3
+      * model_selection
+      * preprocessing
+      * tree
+      * neural_network
+      * externals.six
+      * linear_model
+      * metrics
   * sys
 
 ## Execution
