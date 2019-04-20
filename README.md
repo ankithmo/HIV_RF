@@ -8,8 +8,8 @@
   * numpy v1.16.2
   * logging 
   * os
-  * matplotlib
-      * pyplot v3.0.3
+  * matplotlib v3.0.3
+      * pyplot
   * seaborn v0.9.0
   * xlrd v0.9.0
   * pydotplus v2.0.2
